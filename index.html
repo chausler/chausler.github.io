@@ -72,12 +72,24 @@
 
 <body>
     <div class="header">
-        <button onclick="submitClick()">Click me</button>
+        <h1>Review Unpublished Sessions</h1>
+        <p> Select a session to review:
+            <select id="selectSession">
+
+            </select>
+            <button onclick="selectSession()">Load Waves</button>
+        </p>
+
+
+        <button onclick="saveDraftClick()">Save Session Draft</button>
+        <button onclick="saveAndPublishClick()">Save Session & Publish</button>
         <p id="results"></p>
     </div>
 
     <div>
-        <div id="sidebar_div" class="sidebar"></div>
+        <div id="sidebar_div" class="sidebar">
+            <p3>Holding Place for unassigned surfs</p3>
+        </div>
         <div id="main_div" class="main">
         </div>
     </div>
@@ -85,7 +97,127 @@
 
 
 <script>
-    function submitClick() {
+
+    function removeAllChildNodes(parent) {
+        while (parent.firstChild) {
+            parent.removeChild(parent.firstChild);
+        }
+    }
+
+    function loadWaves(query_string) {
+
+        const sidebar_div = document.getElementById('sidebar_div');
+        sidebar_div.addEventListener("dragover", allowDrop);
+        sidebar_div.addEventListener("drop", drop);
+        const main_div = document.getElementById('main_div');
+        const list = document.createDocumentFragment();
+
+        removeAllChildNodes(sidebar_div);
+        removeAllChildNodes(main_div);
+
+        const url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession" + query_string
+        fetch(url)
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                let surfers = data;
+                var surfer_div;
+
+                surfers.Persons.map(function (surfer) {
+                    if (surfer.person_id.includes("999__")) {
+                        surfer_div = sidebar_div;
+                    } else {
+                        surfer_div = document.createElement('div');
+                        surfer_div.id = Math.random().toString(36).substring(2, 16);
+                        surfer_div.classList.add("target");
+                        surfer_div.addEventListener("dragover", allowDrop);
+                        surfer_div.addEventListener("drop", drop);
+                    }
+                    surfer.Waves.map(function (wave) {
+                        let wave_span = document.createElement('span');
+                        wave_span.draggable = true;
+                        wave_span.addEventListener("dragstart", drag);
+                        wave_span.id = wave.wave_id
+                        wave_span.classList.add('wave')
+
+                        let static_img = document.createElement('img');
+                        static_img.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '_000.jpg')
+                        static_img.draggable = false;
+                        static_img.classList.add('static')
+
+                        let active_img = document.createElement('img');
+                        active_img.src = wave.Thumbnail.detected_person_thumbnail
+                        active_img.draggable = false;
+                        active_img.classList.add('active')
+
+                        wave_span.appendChild(static_img)
+                        wave_span.appendChild(active_img)
+
+                        surfer_div.appendChild(wave_span);
+
+                    });
+                    if (!surfer.person_id.includes("999__")) {
+                        main_div.append(surfer_div)
+                    }
+                });
+                var num_surfers_loaded = surfers.Persons.length;
+                var target_surfer_slots = 22;
+                var new_blank_slots = target_surfer_slots - num_surfers_loaded;
+                if (num_surfers_loaded < target_surfer_slots) {
+                    for (let i = 0; i < new_blank_slots; i++) {
+                        surfer_div = document.createElement('div');
+                        surfer_div.id = Math.random().toString(36).substring(2, 10);
+                        surfer_div.classList.add("target");
+                        surfer_div.addEventListener("dragover", allowDrop);
+                        surfer_div.addEventListener("drop", drop);
+                        main_div.append(surfer_div)
+                    }
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+
+
+    }
+
+    const unpublished_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/list_unpublished_sessions"
+    fetch(unpublished_url).then((response) => {
+        return response.json();
+    })
+        .then((data) => {
+            let sessions = data;
+            let selectElement = document.querySelector('#selectSession');
+            sessions.map(function (session) {
+                let session_text = `${session.StartDateLocal},  ${session.StartHourLocal}:00 =>  ${session.Side}`;
+                let session_value = `?Hour=${session.StartHourLocal}&Date=${session.StartDateLocal}&pool_zone=${session.Side}`;
+                let session_option = document.createElement('option');
+                session_option.value = session_value;
+                session_option.innerText = session_text;
+                selectElement.appendChild(session_option);
+
+            });
+
+        });
+
+    function selectSession() {
+        selectElement = document.querySelector('#selectSession');
+        selected_session = selectElement.value;
+        loadWaves(selected_session);
+        // document.querySelector('.output').textContent = selected_session;
+    }
+
+    function saveAndPublishClick() {
+        let text;
+        if (confirm("Are you sure you want to publish?\nThis can't be undone! ") == true) {
+            text = "You pressed OK!";
+        } else {
+            text = "You canceled!";
+        }
+    }
+
+    function saveDraftClick() {
         const surfers = document.getElementsByClassName("target");
         const surfers_array = [...surfers];
         var results = [];
@@ -134,74 +266,8 @@
 
     }
 
-    const sidebar_div = document.getElementById('sidebar_div');
-    sidebar_div.addEventListener("dragover", allowDrop);
-    sidebar_div.addEventListener("drop", drop);
-    const main_div = document.getElementById('main_div');
-    const list = document.createDocumentFragment();
-    const url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession?Hour=11&Date=2023-03-08&pool_zone=Right"
-    fetch(url)
-        .then((response) => {
-            return response.json();
-        })
-        .then((data) => {
-            let surfers = data;
-            var surfer_div;
 
-            surfers.Persons.map(function (surfer) {
-                if (surfer.person_id.includes("999__")) {
-                    surfer_div = sidebar_div;
-                } else {
-                    surfer_div = document.createElement('div');
-                    surfer_div.id = Math.random().toString(36).substring(2, 16);
-                    surfer_div.classList.add("target");
-                    surfer_div.addEventListener("dragover", allowDrop);
-                    surfer_div.addEventListener("drop", drop);
-                }
-                surfer.Waves.map(function (wave) {
-                    let wave_span = document.createElement('span');
-                    wave_span.draggable = true;
-                    wave_span.addEventListener("dragstart", drag);
-                    wave_span.id = wave.wave_id
-                    wave_span.classList.add('wave')
 
-                    let static_img = document.createElement('img');
-                    static_img.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '_000.jpg')
-                    static_img.draggable = false;
-                    static_img.classList.add('static')
-
-                    let active_img = document.createElement('img');
-                    active_img.src = wave.Thumbnail.detected_person_thumbnail
-                    active_img.draggable = false;
-                    active_img.classList.add('active')
-
-                    wave_span.appendChild(static_img)
-                    wave_span.appendChild(active_img)
-
-                    surfer_div.appendChild(wave_span);
-
-                });
-                if (!surfer.person_id.includes("999__")) {
-                    main_div.append(surfer_div)
-                }
-            });
-            var num_surfers_loaded = surfers.Persons.length;
-            var target_surfer_slots = 22;
-            var new_blank_slots = target_surfer_slots - num_surfers_loaded;
-            if (num_surfers_loaded < target_surfer_slots) {
-                for (let i = 0; i < new_blank_slots; i++) {
-                    surfer_div = document.createElement('div');
-                    surfer_div.id = Math.random().toString(36).substring(2, 10);
-                    surfer_div.classList.add("target");
-                    surfer_div.addEventListener("dragover", allowDrop);
-                    surfer_div.addEventListener("drop", drop);
-                    main_div.append(surfer_div)
-                }
-            }
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
 
     // sidebar.appendChild(list);
 

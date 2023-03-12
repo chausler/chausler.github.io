@@ -1,88 +1,212 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
+
 <head>
-<style>
-div {
-  float: left;
-  width: 300px;
-  height: 300px;
-  margin: 10px;
-  padding: 10px;
-  border: 1px solid black;
-}
-</style>
+    <style>
+        .target {
+            float: left;
+            width: 80%;
+            height: auto;
+            min-height: 120px;
+            min-width: 120px;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid rgb(195, 28, 28);
+        }
+
+        img {
+            width: 120px;
+            height: 120px;
+            /* padding: 2px; */
+        }
+
+        /*
+.target {
+  width: 80%;
+} */
+
+        .main {
+            margin-left: 280px;
+        }
+
+        /* Header/Logo Title */
+        .header {
+            padding: 60px;
+            text-align: center;
+            background: #1abc9c;
+            color: white;
+            /* font-size: 30px; */
+            height: 100px;
+            margin-left: 280px;
+        }
+
+        .sidebar {
+            height: 100%;
+            width: 250px;
+            top: 0;
+            left: 0;
+            padding: 10px;
+            margin: 10px;
+            position: fixed;
+            background-color: rgb(99, 114, 114);
+            padding-top: 20px;
+            overflow: auto
+        }
+
+        .wave {
+            display: inline-block;
+            padding: 2px;
+        }
+
+        .static {
+            position: absolute;
+            background: white;
+        }
+
+        .static:hover {
+            opacity: 0;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="header">
+        <button onclick="submitClick()">Click me</button>
+        <p id="results"></p>
+    </div>
+
+    <div>
+        <div id="sidebar_div" class="sidebar"></div>
+        <div id="main_div" class="main">
+        </div>
+    </div>
+</body>
+
+
 <script>
-function allowDrop(ev) {
-  ev.preventDefault();
-}
+    function submitClick() {
+        const surfers = document.getElementsByClassName("target");
+        const surfers_array = [...surfers];
+        var results = [];
+        surfers_array.map(function (surfer) {
+            const waves = [];
+            const waves_array = [...surfer.childNodes];
+            waves_array.map(function (wave) {
+                waves.push(wave.id);
+            });
 
-function drag(ev) {
-  ev.dataTransfer.setData("text", ev.target.id);
-}
+            if (waves.length > 0) {
+                const surfer_waves = {};
+                surfer_waves["surfer_session_id"] = surfer.id;
+                surfer_waves["waves"] = waves;
+                results.push(surfer_waves);
+            }
 
-function drop(ev, el) {
-  ev.preventDefault();
-  var data = ev.dataTransfer.getData("text");
-  el.appendChild(document.getElementById(data));
-}
+        });
+        console.log(results);
+        document.getElementById("results").innerHTML = JSON.stringify(results, undefined, 2);
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault();
+    }
+
+    function drag(ev) {
+        ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("text");
+        if (ev.target.nodeName == "IMG") {
+            if (ev.target.parentNode.parentNode.nodeName == "DIV") {
+                ev.target.parentNode.parentNode.appendChild(document.getElementById(data));
+            }
+        } else if (ev.target.nodeName == "SPAN") {
+            if (ev.target.parentNode.nodeName == "DIV") {
+                ev.target.parentNode.appendChild(document.getElementById(data));
+            }
+        }
+        else if (ev.target.nodeName == "DIV") {
+            ev.target.appendChild(document.getElementById(data));
+        }
+
+    }
+
+    const sidebar_div = document.getElementById('sidebar_div');
+    sidebar_div.addEventListener("dragover", allowDrop);
+    sidebar_div.addEventListener("drop", drop);
+    const main_div = document.getElementById('main_div');
+    const list = document.createDocumentFragment();
+    const url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession?Hour=11&Date=2023-03-08&pool_zone=Right"
+    fetch(url)
+        .then((response) => {
+            return response.json();
+        })
+        .then((data) => {
+            let surfers = data;
+            var surfer_div;
+
+            surfers.Persons.map(function (surfer) {
+                if (surfer.person_id.includes("999__")) {
+                    surfer_div = sidebar_div;
+                } else {
+                    surfer_div = document.createElement('div');
+                    surfer_div.id = Math.random().toString(36).substring(2, 16);
+                    surfer_div.classList.add("target");
+                    surfer_div.addEventListener("dragover", allowDrop);
+                    surfer_div.addEventListener("drop", drop);
+                }
+                surfer.Waves.map(function (wave) {
+                    let wave_span = document.createElement('span');
+                    wave_span.draggable = true;
+                    wave_span.addEventListener("dragstart", drag);
+                    wave_span.id = wave.wave_id
+                    wave_span.classList.add('wave')
+
+                    let static_img = document.createElement('img');
+                    static_img.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '_000.jpg')
+                    static_img.draggable = false;
+                    static_img.classList.add('static')
+
+                    let active_img = document.createElement('img');
+                    active_img.src = wave.Thumbnail.detected_person_thumbnail
+                    active_img.draggable = false;
+                    active_img.classList.add('active')
+
+                    wave_span.appendChild(static_img)
+                    wave_span.appendChild(active_img)
+
+                    surfer_div.appendChild(wave_span);
+
+                });
+                if (!surfer.person_id.includes("999__")) {
+                    main_div.append(surfer_div)
+                }
+            });
+            var num_surfers_loaded = surfers.Persons.length;
+            var target_surfer_slots = 22;
+            var new_blank_slots = target_surfer_slots - num_surfers_loaded;
+            if (num_surfers_loaded < target_surfer_slots) {
+                for (let i = 0; i < new_blank_slots; i++) {
+                    surfer_div = document.createElement('div');
+                    surfer_div.id = Math.random().toString(36).substring(2, 10);
+                    surfer_div.classList.add("target");
+                    surfer_div.addEventListener("dragover", allowDrop);
+                    surfer_div.addEventListener("drop", drop);
+                    main_div.append(surfer_div)
+                }
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+
+    // sidebar.appendChild(list);
+
+
 
 </script>
-</head>
-<body>
 
-<h2>Drag and Drop</h2>
-<p>Drag the image back and forth between the two div elements.</p>
-
-
-
-<div id="div2" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div3" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div4" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div5" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div6" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div7" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div8" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div9" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div10" ondrop="drop(event, this)" ondragover="allowDrop(event)"></div>
-<div id="div1" ondrop="drop(event, this)" ondragover="allowDrop(event)">
-  <img src="surfer.gif" draggable="true" ondragstart="drag(event)" id="drag114" width="88" height="88" >
-  <img src="surfer14.png" draggable="true" ondragstart="drag(event)" id="drag193" width="88" height="88" >
-  <img src="surfer.gif" draggable="true" ondragstart="drag(event)" id="drag11" width="88" height="88" >
-  <img src="surfer02.png" draggable="true" ondragstart="drag(event)" id="drag133" width="88" height="88" >
-  <img src="surfer01.gif" draggable="true" ondragstart="drag(event)" id="drag124" width="88" height="88" >
-  <img src="surfer02.png" draggable="true" ondragstart="drag(event)" id="drag132" width="88" height="88" >
-  <img src="surfer02.png" draggable="true" ondragstart="drag(event)" id="drag131" width="88" height="88" >
-  <img src="surfer03.png" draggable="true" ondragstart="drag(event)" id="drag142" width="88" height="88" >
-  <img src="surfer01.gif" draggable="true" ondragstart="drag(event)" id="drag121" width="88" height="88" >
-  <img src="surfer13.png" draggable="true" ondragstart="drag(event)" id="drag182" width="88" height="88" >
-  <img src="surfer14.png" draggable="true" ondragstart="drag(event)" id="drag192" width="88" height="88" >
-  <img src="surfer.gif" draggable="true" ondragstart="drag(event)" id="drag113" width="88" height="88" >
-  <img src="surfer03.png" draggable="true" ondragstart="drag(event)" id="drag145" width="88" height="88" >
-  <img src="surfer02.png" draggable="true" ondragstart="drag(event)" id="drag134" width="88" height="88" >
-  <img src="surfer05.gif" draggable="true" ondragstart="drag(event)" id="drag153" width="88" height="88" >
-  <img src="surfer03.png" draggable="true" ondragstart="drag(event)" id="drag144" width="88" height="88" >
-  <img src="surfer05.gif" draggable="true" ondragstart="drag(event)" id="drag152" width="88" height="88" >
-  <img src="surfer11.png" draggable="true" ondragstart="drag(event)" id="drag164" width="88" height="88" >
-  <img src="surfer03.png" draggable="true" ondragstart="drag(event)" id="drag143" width="88" height="88" >
-  <img src="surfer05.gif" draggable="true" ondragstart="drag(event)" id="drag151" width="88" height="88" >
-  <img src="surfer05.gif" draggable="true" ondragstart="drag(event)" id="drag154" width="88" height="88" >
-  <img src="surfer11.png" draggable="true" ondragstart="drag(event)" id="drag162" width="88" height="88" >
-  <img src="surfer11.png" draggable="true" ondragstart="drag(event)" id="drag163" width="88" height="88" >
-  <img src="surfer03.png" draggable="true" ondragstart="drag(event)" id="drag141" width="88" height="88" >
-  <img src="surfer01.gif" draggable="true" ondragstart="drag(event)" id="drag123" width="88" height="88" >
-  <img src="surfer01.gif" draggable="true" ondragstart="drag(event)" id="drag122" width="88" height="88" >
-  <img src="surfer12.png" draggable="true" ondragstart="drag(event)" id="drag171" width="88" height="88" >
-  <img src="surfer13.png" draggable="true" ondragstart="drag(event)" id="drag183" width="88" height="88" >
-  <img src="surfer.gif" draggable="true" ondragstart="drag(event)" id="drag112" width="88" height="88" >
-  <img src="surfer12.png" draggable="true" ondragstart="drag(event)" id="drag172" width="88" height="88" >
-  <img src="surfer12.png" draggable="true" ondragstart="drag(event)" id="drag174" width="88" height="88" >
-  <img src="surfer13.png" draggable="true" ondragstart="drag(event)" id="drag181" width="88" height="88" >
-  <img src="surfer11.png" draggable="true" ondragstart="drag(event)" id="drag161" width="88" height="88" >
-  <img src="surfer13.png" draggable="true" ondragstart="drag(event)" id="drag184" width="88" height="88" >
-  <img src="surfer14.png" draggable="true" ondragstart="drag(event)" id="drag191" width="88" height="88" >
-  <img src="surfer12.png" draggable="true" ondragstart="drag(event)" id="drag173" width="88" height="88" >
-<img src="surfer14.png" draggable="true" ondragstart="drag(event)" id="drag194" width="88" height="88" >
-</div>
-
-</body>
 </html>

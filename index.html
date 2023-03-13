@@ -122,6 +122,7 @@
             })
             .then((data) => {
                 let surfers = data;
+
                 var surfer_div;
 
                 surfers.Persons.map(function (surfer) {
@@ -174,6 +175,8 @@
                         main_div.append(surfer_div)
                     }
                 }
+                sessionStorage.setItem("UTCTimestamp", surfers.Session.UTCTimestamp);
+                sessionStorage.setItem("Side", surfers.Session.Side);
             })
             .catch(function (error) {
                 console.log(error);
@@ -210,7 +213,7 @@
 
     function saveAndPublishClick() {
         let text;
-        if (confirm("Are you sure you want to publish?\nThis can't be undone! ") == true) {
+        if (confirm("THIS DOESNT DO ANYTHING YET :-P\nPlaese be sure you are happy with the wave assignments.\nThis can't be undone! ") == true) {
             text = "You pressed OK!";
         } else {
             text = "You canceled!";
@@ -220,7 +223,7 @@
     function saveDraftClick() {
         const surfers = document.getElementsByClassName("target");
         const surfers_array = [...surfers];
-        var results = [];
+        var surf_sessions = [];
         surfers_array.map(function (surfer) {
             const waves = [];
             const waves_array = [...surfer.childNodes];
@@ -232,12 +235,22 @@
                 const surfer_waves = {};
                 surfer_waves["surfer_session_id"] = surfer.id;
                 surfer_waves["waves"] = waves;
-                results.push(surfer_waves);
+                surf_sessions.push(surfer_waves);
             }
 
         });
-        console.log(results);
-        document.getElementById("results").innerHTML = JSON.stringify(results, undefined, 2);
+        console.log(surf_sessions);
+        const payload = {};
+        payload['new_session'] = 0;
+        payload['session_start'] = sessionStorage.getItem('UTCTimestamp');
+        payload['session_end'] = parseInt(sessionStorage.getItem('UTCTimestamp')) + (60 * 60 * 1000);
+        payload['session_details'] = {
+            'brand': 'URBNSURF',
+            'location': 'Melbourne',
+            'pool_zone': sessionStorage.getItem('Side')};
+        payload['surfer_sessions'] = surf_sessions
+
+        document.getElementById("results").innerHTML = JSON.stringify(payload, undefined, 2);
     }
 
     function allowDrop(ev) {

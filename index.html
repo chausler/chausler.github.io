@@ -79,8 +79,6 @@
             </select>
             <button onclick="selectSession()">Load Waves</button>
         </p>
-
-
         <button onclick="saveDraftClick()">Save Session Draft</button>
         <button onclick="saveAndPublishClick()">Save Session & Publish</button>
         <p id="results"></p>
@@ -177,6 +175,7 @@
                 }
                 sessionStorage.setItem("UTCTimestamp", surfers.Session.UTCTimestamp);
                 sessionStorage.setItem("Side", surfers.Session.Side);
+                sessionStorage.setItem("SessionID", surfers.Session.id);
             })
             .catch(function (error) {
                 console.log(error);
@@ -211,16 +210,7 @@
         // document.querySelector('.output').textContent = selected_session;
     }
 
-    function saveAndPublishClick() {
-        let text;
-        if (confirm("THIS DOESNT DO ANYTHING YET :-P\nPlaese be sure you are happy with the wave assignments.\nThis can't be undone! ") == true) {
-            text = "You pressed OK!";
-        } else {
-            text = "You canceled!";
-        }
-    }
-
-    function saveDraftClick() {
+    function buildSessionPayload() {
         const surfers = document.getElementsByClassName("target");
         const surfers_array = [...surfers];
         var surf_sessions = [];
@@ -247,10 +237,50 @@
         payload['session_details'] = {
             'brand': 'URBNSURF',
             'location': 'Melbourne',
-            'pool_zone': sessionStorage.getItem('Side')};
+            'pool_zone': sessionStorage.getItem('Side')
+        };
         payload['surfer_sessions'] = surf_sessions
+        return payload
 
-        document.getElementById("results").innerHTML = JSON.stringify(payload, undefined, 2);
+    }
+
+    function saveAndPublishClick() {
+        let text;
+        if (confirm("THIS DOESNT DO ANYTHING YET :-P\nPlaese be sure you are happy with the wave assignments.\nThis can't be undone! ") == true) {
+            text = "You pressed OK!";
+        } else {
+            text = "You canceled!";
+        }
+    }
+
+    const saveDraftClick = async () => {
+
+        const payload = buildSessionPayload();
+
+        const get_session_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Session/GetSessionByID?id=" + sessionStorage.getItem('SessionID');
+        const delete_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/session/" + sessionStorage.getItem('SessionID');
+        const create_session_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/import/session_end";
+
+        const session = await fetch(get_session_url).then(response => response.json());
+        const result_item = document.getElementById("results");
+
+        // if (session.published == false) {
+        //     await fetch(delete_url, { method: 'DELETE', credentials: 'include' })
+        //         .catch(function (error) {
+        //             console.log(error);
+        //         });
+
+        const requestOptions = {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        };
+        fetch(create_session_url, requestOptions)
+            .then(response => response.json())
+            .then(data => result_item.innerHTML = JSON.stringify(data));
+        // }
+
     }
 
     function allowDrop(ev) {

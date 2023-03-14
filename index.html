@@ -31,12 +31,12 @@
 
         /* Header/Logo Title */
         .header {
-            padding: 60px;
+            padding: 10px;
             text-align: center;
             background: #1abc9c;
             color: white;
             /* font-size: 30px; */
-            height: 100px;
+            height: 200px;
             margin-left: 280px;
         }
 
@@ -66,11 +66,96 @@
         .static:hover {
             opacity: 0;
         }
+
+
+        /* Full-width input fields */
+        input[type=text],
+        input[type=password] {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        /*
+/* Set a style for all buttons */
+        /* button {
+  background-color: #04AA6D;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}  */
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+
+        .container {
+            padding: 16px;
+        }
+
+        span.psw {
+            float: right;
+            padding-top: 16px;
+        }
+
+        /* The Modal (background) */
+        .modal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            /* Stay in place */
+            z-index: 1;
+            /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            /* Full width */
+            height: 100%;
+            /* Full height */
+            overflow: auto;
+            /* Enable scroll if needed */
+            background-color: rgb(0, 0, 0);
+            /* Fallback color */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Black w/ opacity */
+            padding-top: 60px;
+        }
+
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto 15% auto;
+            /* 5% from the top, 15% from the bottom and centered */
+            border: 1px solid #888;
+            width: 80%;
+            /* Could be more or less, depending on screen size */
+        }
     </style>
 
 </head>
 
 <body>
+    <!-- <button onclick="document.getElementById('id01').style.display='block'" style="width:100px;">Login</button> -->
+
+    <div id="login" class="modal">
+        <form class="modal-content animate">
+            <div class="container">
+                <label for="uname"><b>Username</b></label>
+                <input type="text" placeholder="Enter Username" name="uname" id="username" required>
+                <label for="psw"><b>Password</b></label>
+                <input type="password" placeholder="Enter Password" name="psw" id="password" required>
+                <button type="submit">Login</button>
+            </div>
+        </form>
+    </div>
+
     <div class="header">
         <h1>Review Unpublished Sessions</h1>
         <p> Select a session to review:
@@ -79,8 +164,8 @@
             </select>
             <button onclick="selectSession()">Load Waves</button>
         </p>
-        <button onclick="saveDraftClick()">Save Session Draft</button>
-        <button onclick="saveAndPublishClick()">Save Session & Publish</button>
+        <button id="draftButton" onclick="saveDraftClick()">Save Session Draft</button>
+        <button id="publishButton" onclick="saveAndPublishClick()">Save Session & Publish</button>
         <p id="results"></p>
     </div>
 
@@ -96,22 +181,90 @@
 
 <script>
 
+
+    const login = async (e) => {
+        e.preventDefault()
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        auth_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/auth/login"
+
+        const payload = {
+            "password": password,
+            "username": username
+        }
+
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        };
+        const data = await fetch(auth_url, requestOptions)
+            .then((response) => {
+                return response.json();
+            });
+
+        localStorage.setItem('AuthToken', data.authToken);
+        const modal = document.getElementById('login')
+        modal.style.display = "none";
+
+    }
+
+
+    // When the user clicks anywhere outside of the modal, close it
+    const modal = document.getElementById('login')
+    modal.addEventListener("submit", login);
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+    const isAuthed = async () => {
+        const auth_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/auth/me"
+        const auth_token = localStorage.getItem('AuthToken');
+        const return_val = await fetch(auth_url, {
+            headers: {
+                'Authorization': auth_token
+            }
+        })
+            .then((response) => {
+                if (response.status == 200) {
+                    return true;
+                } else {
+                    document.getElementById('login').style.display = 'block'
+
+                }
+            }).catch(function (error) {
+                return false;
+            });
+        return return_val;
+    }
+
     function removeAllChildNodes(parent) {
         while (parent.firstChild) {
             parent.removeChild(parent.firstChild);
         }
     }
 
-    function loadWaves(query_string) {
+    function clearWaves() {
+        const sidebar_div = document.getElementById('sidebar_div');
+        const main_div = document.getElementById('main_div');
 
+        removeAllChildNodes(sidebar_div);
+        removeAllChildNodes(main_div);
+
+    }
+
+    const loadWaves = async (query_string) => {
+        const authed = await isAuthed();
         const sidebar_div = document.getElementById('sidebar_div');
         sidebar_div.addEventListener("dragover", allowDrop);
         sidebar_div.addEventListener("drop", drop);
         const main_div = document.getElementById('main_div');
         const list = document.createDocumentFragment();
 
-        removeAllChildNodes(sidebar_div);
-        removeAllChildNodes(main_div);
+        clearWaves();
 
         const url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession" + query_string
         fetch(url)
@@ -184,24 +337,28 @@
 
     }
 
-    const unpublished_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/list_unpublished_sessions"
-    fetch(unpublished_url).then((response) => {
-        return response.json();
-    })
-        .then((data) => {
-            let sessions = data;
-            let selectElement = document.querySelector('#selectSession');
-            sessions.map(function (session) {
-                let session_text = `${session.StartDateLocal},  ${session.StartHourLocal}:00 =>  ${session.Side}`;
-                let session_value = `?Hour=${session.StartHourLocal}&Date=${session.StartDateLocal}&pool_zone=${session.Side}`;
-                let session_option = document.createElement('option');
-                session_option.value = session_value;
-                session_option.innerText = session_text;
-                selectElement.appendChild(session_option);
+    function loadSessionsList() {
+        const unpublished_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/list_unpublished_sessions"
+        fetch(unpublished_url).then((response) => {
+            return response.json();
+        })
+            .then((data) => {
+                let sessions = data;
+                let selectElement = document.querySelector('#selectSession');
+                removeAllChildNodes(selectElement);
+                sessions.map(function (session) {
+                    let session_text = `${session.StartDateLocal},  ${session.StartHourLocal}:00 =>  ${session.Side}`;
+                    let session_value = `?Hour=${session.StartHourLocal}&Date=${session.StartDateLocal}&pool_zone=${session.Side}`;
+                    let session_option = document.createElement('option');
+                    session_option.value = session_value;
+                    session_option.innerText = session_text;
+                    selectElement.appendChild(session_option);
+
+                });
 
             });
-
-        });
+    }
+    loadSessionsList();
 
     function selectSession() {
         selectElement = document.querySelector('#selectSession');
@@ -210,53 +367,80 @@
         // document.querySelector('.output').textContent = selected_session;
     }
 
-    function buildSessionPayload() {
+    function buildSessionPayload(publish_session = false) {
         const surfers = document.getElementsByClassName("target");
         const surfers_array = [...surfers];
         var surf_sessions = [];
         surfers_array.map(function (surfer) {
-            const waves = [];
-            const waves_array = [...surfer.childNodes];
+            let waves = [];
+            let waves_array = [...surfer.childNodes];
             waves_array.map(function (wave) {
                 waves.push(wave.id);
             });
 
             if (waves.length > 0) {
-                const surfer_waves = {};
+                let surfer_waves = {};
                 surfer_waves["surfer_session_id"] = surfer.id;
                 surfer_waves["waves"] = waves;
                 surf_sessions.push(surfer_waves);
             }
 
         });
+
+        // Only keep the sidebar surfers if we're not publishing
+        if (publish_session == false) {
+            let sidebar_div = document.getElementById("sidebar_div");
+            let waves = [];
+            let waves_array = [...sidebar_div.childNodes];
+            waves_array.map(function (wave) {
+                if (wave.nodeName == "SPAN") {
+                    waves.push(wave.id);
+                }
+            });
+
+            if (waves.length > 0) {
+                let surfer_waves = {};
+                surfer_waves["surfer_session_id"] = '999__' + Math.random().toString(36).substring(2, 16);
+                surfer_waves["waves"] = waves;
+                surf_sessions.push(surfer_waves);
+            }
+
+        }
         console.log(surf_sessions);
+
+        start_timestamp = parseInt(sessionStorage.getItem('UTCTimestamp'));
+        end_timestamp = parseInt(sessionStorage.getItem('UTCTimestamp')) + (60 * 60 * 1000);
+        start_time = new Date(start_timestamp);
+        end_time = new Date(end_timestamp);
+        start_utc_date_str = start_time.toLocaleString('en-GB', { timeZone: 'Europe/London' });
+        end_utc_date_str = end_time.toLocaleString('en-GB', { timeZone: 'Europe/London' });
+        formatted_start_utc_date_str = start_utc_date_str.split(',')[0].split('/').reverse().slice(0, 3).join('-') + 'T' + start_utc_date_str.split(',')[1].trim() + '+00:00';
+        formatted_end_utc_date_str = end_utc_date_str.split(',')[0].split('/').reverse().slice(0, 3).join('-') + 'T' + end_utc_date_str.split(',')[1].trim() + '+00:00';
+
+
         const payload = {};
         payload['new_session'] = 0;
-        payload['session_start'] = sessionStorage.getItem('UTCTimestamp');
-        payload['session_end'] = parseInt(sessionStorage.getItem('UTCTimestamp')) + (60 * 60 * 1000);
-        payload['session_details'] = {
+        payload['session_start'] = start_timestamp;
+        payload['session_end'] = end_timestamp;
+        payload['session_detail'] = {
             'brand': 'URBNSURF',
             'location': 'Melbourne',
             'pool_zone': sessionStorage.getItem('Side')
         };
-        payload['surfer_sessions'] = surf_sessions
+        payload['surfer_sessions'] = surf_sessions;
+        payload['publish'] = publish_session;
         return payload
 
     }
 
-    function saveAndPublishClick() {
-        let text;
-        if (confirm("THIS DOESNT DO ANYTHING YET :-P\nPlaese be sure you are happy with the wave assignments.\nThis can't be undone! ") == true) {
-            text = "You pressed OK!";
-        } else {
-            text = "You canceled!";
-        }
-    }
+    const saveDraftClick = async (publish_session = false) => {
+        const draftButton = document.getElementById('draftButton');
+        const publishButton = document.getElementById('publishButton');
+        draftButton.disabled = true;
+        publishButton.disabled = true;
 
-    const saveDraftClick = async () => {
-
-        const payload = buildSessionPayload();
-
+        const payload = buildSessionPayload(publish_session);
+        const auth_token = localStorage.getItem('AuthToken');
         const get_session_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Session/GetSessionByID?id=" + sessionStorage.getItem('SessionID');
         const delete_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/session/" + sessionStorage.getItem('SessionID');
         const create_session_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/import/session_end";
@@ -264,24 +448,53 @@
         const session = await fetch(get_session_url).then(response => response.json());
         const result_item = document.getElementById("results");
 
-        // if (session.published == false) {
-        //     await fetch(delete_url, { method: 'DELETE', credentials: 'include' })
-        //         .catch(function (error) {
-        //             console.log(error);
-        //         });
+        if (session.published == false) {
+            await fetch(delete_url, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': auth_token
+                }
+            })
+                .catch(function (error) {
+                    console.log(error);
+                });
 
-        const requestOptions = {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        };
-        fetch(create_session_url, requestOptions)
-            .then(response => response.json())
-            .then(data => result_item.innerHTML = JSON.stringify(data));
-        // }
+            const requestOptions = {
+                method: 'POST',
+                // credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': auth_token
+                },
+                body: JSON.stringify(payload)
+            };
+            await fetch(create_session_url, requestOptions)
+                .then(response => response.json())
+                .then((data) => {
+                    result_item.innerHTML = JSON.stringify(data);
+                    sessionStorage.setItem('SessionID', data.id)
+                });
+        }
+        if (publish_session == true) {
+            clearWaves();
+            loadSessionsList();
+        }
+        draftButton.disabled = false;
+        publishButton.disabled = false;
 
     }
+
+
+    function saveAndPublishClick() {
+        let text;
+        if (confirm("Plaese be sure you are happy with the wave assignments.\nThis can't be undone! ") == true) {
+            saveDraftClick(true)
+        } else {
+            text = "You canceled!";
+        }
+
+    }
+
 
     function allowDrop(ev) {
         ev.preventDefault();

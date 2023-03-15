@@ -186,7 +186,7 @@
         e.preventDefault()
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        auth_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/auth/login"
+        auth_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/auth/login"
 
         const payload = {
             "password": password,
@@ -221,7 +221,7 @@
         }
     }
     const isAuthed = async () => {
-        const auth_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/auth/me"
+        const auth_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/auth/me"
         const auth_token = localStorage.getItem('AuthToken');
         const return_val = await fetch(auth_url, {
             headers: {
@@ -266,7 +266,7 @@
 
         clearWaves();
 
-        const url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession" + query_string
+        const url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession" + query_string
         fetch(url)
             .then((response) => {
                 return response.json();
@@ -338,7 +338,7 @@
     }
 
     function loadSessionsList() {
-        const unpublished_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/list_unpublished_sessions"
+        const unpublished_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/list_unpublished_sessions"
         fetch(unpublished_url).then((response) => {
             return response.json();
         })
@@ -441,9 +441,9 @@
 
         const payload = buildSessionPayload(publish_session);
         const auth_token = localStorage.getItem('AuthToken');
-        const get_session_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/Session/GetSessionByID?id=" + sessionStorage.getItem('SessionID');
-        const delete_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/session/" + sessionStorage.getItem('SessionID');
-        const create_session_url = "https://xqmp-ydra-x0sy.a2.xano.io/api:kYaePrLu:v1/import/session_end";
+        const get_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/Session/GetSessionByID?id=" + sessionStorage.getItem('SessionID');
+        const delete_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/session/" + sessionStorage.getItem('SessionID');
+        const create_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/import/session_end";
 
         const session = await fetch(get_session_url).then(response => response.json());
         const result_item = document.getElementById("results");

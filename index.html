@@ -404,7 +404,7 @@
             let waves = [];
             let waves_array = [...sidebar_div.childNodes];
             waves_array.map(function (wave) {
-                if (wave.nodeName == "SPAN") {
+                if (wave.nodeName == "A") {
                     waves.push(wave.id);
                 }
             });
@@ -501,7 +501,7 @@
             if (ev.target.parentNode.parentNode.nodeName == "DIV") {
                 ev.target.parentNode.parentNode.appendChild(document.getElementById(data));
             }
-        } else if (ev.target.nodeName == "SPAN") {
+        } else if (ev.target.nodeName == "A") {
             if (ev.target.parentNode.nodeName == "DIV") {
                 ev.target.parentNode.appendChild(document.getElementById(data));
             }

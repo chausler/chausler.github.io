@@ -26,7 +26,7 @@
 } */
 
         .main {
-            margin-left: 330px;
+            margin-left: 335px;
         }
 
         /* Header/Logo Title */
@@ -37,12 +37,12 @@
             color: white;
             /* font-size: 30px; */
             height: 200px;
-            margin-left: 330px;
+            margin-left: 335px;
         }
 
         .sidebar {
             height: 100%;
-            width: 310px;
+            width: 315px;
             top: 0;
             left: 0;
             padding: 10px;
@@ -55,7 +55,16 @@
 
         .wave {
             display: inline-block;
-            padding: 2px;
+            padding: 3px;
+        }
+
+        .wave video{
+            display: block;
+        }
+
+        .wave a{
+            text-align: center;
+            display: block;
         }
 
         .static {
@@ -287,13 +296,11 @@
                         surfer_div.addEventListener("drop", drop);
                     }
                     surfer.Waves.map(function (wave) {
-                        let wave_span = document.createElement('a');
-                        wave_span.href = wave.Video[0].landscape;
-                        wave_span.target="_blank";
+                        let wave_span = document.createElement('span');
                         wave_span.draggable = true;
                         wave_span.addEventListener("dragstart", drag);
-                        wave_span.id = wave.wave_id
-                        wave_span.classList.add('wave')
+                        wave_span.id = wave.wave_id;
+                        wave_span.classList.add('wave');
 
                         // let static_img = document.createElement('img');
                         // static_img.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '_000.jpg')
@@ -309,7 +316,13 @@
                         video.addEventListener("mouseover", (e) => {video.play()});
                         video.addEventListener("mouseout", (e) => {video.pause(); video.currentTime = 0;});
                         video.draggable = false;
-                        video.classList.add('active')
+                        // video.classList.add('active')
+
+                        let link = document.createElement('a')
+                        link.draggable = false;
+                        link.href = wave.Video[0].landscape;
+                        link.target="_blank";
+                        link.text = wave.wave_id.split('_')[2].replaceAll('-', ':');
 
 
                         // let video = document.createElement('img');
@@ -318,13 +331,14 @@
                         // video.classList.add('active')
 
                         // wave_span.appendChild(static_img)
-                        wave_span.appendChild(video)
+                        wave_span.appendChild(video);
+                        wave_span.appendChild(link);
 
                         surfer_div.appendChild(wave_span);
 
                     });
                     if (!surfer.person_id.includes("999__")) {
-                        main_div.append(surfer_div)
+                        main_div.append(surfer_div);
                     }
                 });
                 var num_surfers_loaded = surfers.Persons.length;
@@ -337,7 +351,7 @@
                         surfer_div.classList.add("target");
                         surfer_div.addEventListener("dragover", allowDrop);
                         surfer_div.addEventListener("drop", drop);
-                        main_div.append(surfer_div)
+                        main_div.append(surfer_div);
                     }
                 }
                 sessionStorage.setItem("SessionID", surfers.Session.id);
@@ -404,7 +418,7 @@
             let waves = [];
             let waves_array = [...sidebar_div.childNodes];
             waves_array.map(function (wave) {
-                if (wave.nodeName == "A") {
+                if (wave.nodeName == "SPAN") {
                     waves.push(wave.id);
                 }
             });
@@ -497,11 +511,11 @@
     function drop(ev) {
         ev.preventDefault();
         var data = ev.dataTransfer.getData("text");
-        if (ev.target.nodeName == "VIDEO") {
+        if (ev.target.nodeName == "VIDEO" || ev.target.nodeName == "A") {
             if (ev.target.parentNode.parentNode.nodeName == "DIV") {
                 ev.target.parentNode.parentNode.appendChild(document.getElementById(data));
             }
-        } else if (ev.target.nodeName == "A") {
+        } else if (ev.target.nodeName == "SPAN") {
             if (ev.target.parentNode.nodeName == "DIV") {
                 ev.target.parentNode.appendChild(document.getElementById(data));
             }

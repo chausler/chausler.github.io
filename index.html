@@ -162,7 +162,7 @@
             <select id="selectSession">
 
             </select>
-            <button onclick="selectSession()">Load Waves</button>
+            <button id="loadButton" onclick="selectSession()">Load Waves</button>
         </p>
         <button id="draftButton" onclick="saveDraftClick()">Save Session Draft</button>
         <button id="publishButton" onclick="saveAndPublishClick()">Save Session & Publish</button>
@@ -256,7 +256,7 @@
 
     }
 
-    const loadWaves = async (query_string) => {
+    const loadWaves = async (session_id) => {
         const authed = await isAuthed();
         const sidebar_div = document.getElementById('sidebar_div');
         sidebar_div.addEventListener("dragover", allowDrop);
@@ -266,7 +266,7 @@
 
         clearWaves();
 
-        const url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/Admin/GetSession" + query_string
+        const url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Admin/GetSessionByIDFull?id=" + session_id;
         fetch(url)
             .then((response) => {
                 return response.json();
@@ -326,8 +326,6 @@
                         main_div.append(surfer_div)
                     }
                 }
-                sessionStorage.setItem("UTCTimestamp", surfers.Session.UTCTimestamp);
-                sessionStorage.setItem("Side", surfers.Session.Side);
                 sessionStorage.setItem("SessionID", surfers.Session.id);
             })
             .catch(function (error) {
@@ -338,7 +336,7 @@
     }
 
     function loadSessionsList() {
-        const unpublished_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/list_unpublished_sessions"
+        const unpublished_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Session/list_unpublished_sessions"
         fetch(unpublished_url).then((response) => {
             return response.json();
         })
@@ -347,10 +345,9 @@
                 let selectElement = document.querySelector('#selectSession');
                 removeAllChildNodes(selectElement);
                 sessions.map(function (session) {
-                    let session_text = `${session.StartDateLocal},  ${session.StartHourLocal}:00 =>  ${session.Side}`;
-                    let session_value = `?Hour=${session.StartHourLocal}&Date=${session.StartDateLocal}&pool_zone=${session.Side}`;
+                    let session_text = `${session.start_date_local},  ${session.start_hour_local}:00 =>  ${session.side}`;
                     let session_option = document.createElement('option');
-                    session_option.value = session_value;
+                    session_option.value = session.id;
                     session_option.innerText = session_text;
                     selectElement.appendChild(session_option);
 
@@ -408,27 +405,11 @@
         }
         console.log(surf_sessions);
 
-        start_timestamp = parseInt(sessionStorage.getItem('UTCTimestamp'));
-        end_timestamp = parseInt(sessionStorage.getItem('UTCTimestamp')) + (60 * 60 * 1000);
-        start_time = new Date(start_timestamp);
-        end_time = new Date(end_timestamp);
-        start_utc_date_str = start_time.toLocaleString('en-GB', { timeZone: 'Europe/London' });
-        end_utc_date_str = end_time.toLocaleString('en-GB', { timeZone: 'Europe/London' });
-        formatted_start_utc_date_str = start_utc_date_str.split(',')[0].split('/').reverse().slice(0, 3).join('-') + 'T' + start_utc_date_str.split(',')[1].trim() + '+00:00';
-        formatted_end_utc_date_str = end_utc_date_str.split(',')[0].split('/').reverse().slice(0, 3).join('-') + 'T' + end_utc_date_str.split(',')[1].trim() + '+00:00';
-
-
         const payload = {};
-        payload['new_session'] = 0;
-        payload['session_start'] = start_timestamp;
-        payload['session_end'] = end_timestamp;
-        payload['session_detail'] = {
-            'brand': 'URBNSURF',
-            'location': 'Melbourne',
-            'pool_zone': sessionStorage.getItem('Side')
-        };
+        payload['session_id'] = sessionStorage.getItem('SessionID');
         payload['surfer_sessions'] = surf_sessions;
-        payload['publish'] = publish_session;
+        payload['clustered'] = true;
+        payload['published'] = publish_session;
         return payload
 
     }
@@ -436,29 +417,20 @@
     const saveDraftClick = async (publish_session = false) => {
         const draftButton = document.getElementById('draftButton');
         const publishButton = document.getElementById('publishButton');
+        const loadButton = document.getElementById('loadButton');
         draftButton.disabled = true;
         publishButton.disabled = true;
+        loadButton.disabled = true;
 
         const payload = buildSessionPayload(publish_session);
         const auth_token = localStorage.getItem('AuthToken');
+        const update_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Session/UpdateSession";
         const get_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/Session/GetSessionByID?id=" + sessionStorage.getItem('SessionID');
-        const delete_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/session/" + sessionStorage.getItem('SessionID');
-        const create_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/import/session_end";
 
         const session = await fetch(get_session_url).then(response => response.json());
         const result_item = document.getElementById("results");
 
         if (session.published == false) {
-            await fetch(delete_url, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': auth_token
-                }
-            })
-                .catch(function (error) {
-                    console.log(error);
-                });
-
             const requestOptions = {
                 method: 'POST',
                 // credentials: 'include',
@@ -468,19 +440,23 @@
                 },
                 body: JSON.stringify(payload)
             };
-            await fetch(create_session_url, requestOptions)
+            await fetch(update_session_url, requestOptions)
                 .then(response => response.json())
                 .then((data) => {
-                    result_item.innerHTML = JSON.stringify(data);
+                    result_item.innerHTML = "Updated!" + JSON.stringify(data);
                     sessionStorage.setItem('SessionID', data.id)
                 });
+        }else{
+            result_item.innerHTML = "Can't publish. Session already published";
         }
+
         if (publish_session == true) {
             clearWaves();
             loadSessionsList();
         }
         draftButton.disabled = false;
         publishButton.disabled = false;
+        loadButton.disabled = false;
 
     }
 

@@ -7,8 +7,8 @@
             float: left;
             width: 80%;
             height: auto;
-            min-height: 120px;
-            min-width: 120px;
+            min-height: 150px;
+            min-width: 150px;
             margin: 10px;
             padding: 10px;
             border: 1px solid rgb(195, 28, 28);
@@ -26,7 +26,7 @@
 } */
 
         .main {
-            margin-left: 280px;
+            margin-left: 330px;
         }
 
         /* Header/Logo Title */
@@ -37,12 +37,12 @@
             color: white;
             /* font-size: 30px; */
             height: 200px;
-            margin-left: 280px;
+            margin-left: 330px;
         }
 
         .sidebar {
             height: 100%;
-            width: 250px;
+            width: 310px;
             top: 0;
             left: 0;
             padding: 10px;
@@ -287,24 +287,38 @@
                         surfer_div.addEventListener("drop", drop);
                     }
                     surfer.Waves.map(function (wave) {
-                        let wave_span = document.createElement('span');
+                        let wave_span = document.createElement('a');
+                        wave_span.href = wave.Video[0].landscape;
+                        wave_span.target="_blank";
                         wave_span.draggable = true;
                         wave_span.addEventListener("dragstart", drag);
                         wave_span.id = wave.wave_id
                         wave_span.classList.add('wave')
 
-                        let static_img = document.createElement('img');
-                        static_img.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '_000.jpg')
-                        static_img.draggable = false;
-                        static_img.classList.add('static')
+                        // let static_img = document.createElement('img');
+                        // static_img.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '_000.jpg')
+                        // static_img.draggable = false;
+                        // static_img.classList.add('static')
 
-                        let active_img = document.createElement('img');
-                        active_img.src = wave.Thumbnail.detected_person_thumbnail
-                        active_img.draggable = false;
-                        active_img.classList.add('active')
+                        let video = document.createElement('video');
+                        video.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '.mp4');
+                        video.autoplay=false;
+                        video.loop=true;
+                        video.muted=true;
+                        video.playsinline=true;
+                        video.addEventListener("mouseover", (e) => {video.play()});
+                        video.addEventListener("mouseout", (e) => {video.pause(); video.currentTime = 0;});
+                        video.draggable = false;
+                        video.classList.add('active')
 
-                        wave_span.appendChild(static_img)
-                        wave_span.appendChild(active_img)
+
+                        // let video = document.createElement('img');
+                        // video.src = wave.Thumbnail.detected_person_thumbnail
+                        // video.draggable = false;
+                        // video.classList.add('active')
+
+                        // wave_span.appendChild(static_img)
+                        wave_span.appendChild(video)
 
                         surfer_div.appendChild(wave_span);
 
@@ -483,7 +497,7 @@
     function drop(ev) {
         ev.preventDefault();
         var data = ev.dataTransfer.getData("text");
-        if (ev.target.nodeName == "IMG") {
+        if (ev.target.nodeName == "VIDEO") {
             if (ev.target.parentNode.parentNode.nodeName == "DIV") {
                 ev.target.parentNode.parentNode.appendChild(document.getElementById(data));
             }

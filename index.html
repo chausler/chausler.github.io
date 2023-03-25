@@ -290,7 +290,7 @@
                         surfer_div = sidebar_div;
                     } else {
                         surfer_div = document.createElement('div');
-                        surfer_div.id = Math.random().toString(36).substring(2, 16);
+                        surfer_div.id = surfer.person_id;
                         surfer_div.classList.add("target");
                         surfer_div.addEventListener("dragover", allowDrop);
                         surfer_div.addEventListener("drop", drop);

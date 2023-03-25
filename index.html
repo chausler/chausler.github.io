@@ -284,8 +284,23 @@
                 let surfers = data;
 
                 var surfer_div;
+                let persons = surfers.Persons;
+                // sort by name
+                persons.sort((a, b) => {
+                    const lenA = a.Waves.length;
+                    const lenB = b.Waves.length;
+                    if (lenA < lenB) {
+                        return 1;
+                    }
+                    if (lenA > lenB) {
+                        return -1;
+                    }
+                    // names must be equal
+                    return 0;
+                });
 
-                surfers.Persons.map(function (surfer) {
+
+                persons.map(function (surfer) {
                     if (surfer.person_id.includes("999__")) {
                         surfer_div = sidebar_div;
                     } else {

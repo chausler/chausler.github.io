@@ -58,11 +58,11 @@
             padding: 3px;
         }
 
-        .wave video{
+        .wave video {
             display: block;
         }
 
-        .wave a{
+        .wave a {
             text-align: center;
             display: block;
         }
@@ -295,7 +295,21 @@
                         surfer_div.addEventListener("dragover", allowDrop);
                         surfer_div.addEventListener("drop", drop);
                     }
-                    surfer.Waves.map(function (wave) {
+                    let waves = surfer.Waves;
+                    // sort by name
+                    waves.sort((a, b) => {
+                        const nameA = a.wave_id;
+                        const nameB = b.wave_id;
+                        if (nameA < nameB) {
+                            return -1;
+                        }
+                        if (nameA > nameB) {
+                            return 1;
+                        }
+                        // names must be equal
+                        return 0;
+                    });
+                    waves.map(function (wave) {
                         let wave_span = document.createElement('span');
                         wave_span.draggable = true;
                         wave_span.addEventListener("dragstart", drag);
@@ -309,19 +323,19 @@
 
                         let video = document.createElement('video');
                         video.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '.mp4');
-                        video.autoplay=false;
-                        video.loop=true;
-                        video.muted=true;
-                        video.playsinline=true;
-                        video.addEventListener("mouseover", (e) => {video.play()});
-                        video.addEventListener("mouseout", (e) => {video.pause(); video.currentTime = 0;});
+                        video.autoplay = false;
+                        video.loop = true;
+                        video.muted = true;
+                        video.playsinline = true;
+                        video.addEventListener("mouseover", (e) => { video.play() });
+                        video.addEventListener("mouseout", (e) => { video.pause(); video.currentTime = 0; });
                         video.draggable = false;
                         // video.classList.add('active')
 
                         let link = document.createElement('a')
                         link.draggable = false;
                         link.href = wave.Video[0].landscape;
-                        link.target="_blank";
+                        link.target = "_blank";
                         link.text = wave.wave_id.split('_')[2].replaceAll('-', ':');
 
 
@@ -474,7 +488,7 @@
                     result_item.innerHTML = "Updated!" + JSON.stringify(data);
                     sessionStorage.setItem('SessionID', data.id)
                 });
-        }else{
+        } else {
             result_item.innerHTML = "Can't publish. Session already published";
         }
 

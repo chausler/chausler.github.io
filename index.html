@@ -338,6 +338,7 @@
 
                         let video = document.createElement('video');
                         video.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '.mp4');
+                        video.type="video/mp4"
                         video.autoplay = false;
                         video.loop = true;
                         video.muted = true;
@@ -349,7 +350,7 @@
 
                         let link = document.createElement('a')
                         link.draggable = false;
-                        link.href = wave.Video[0].landscape;
+                        link.href = "./video_render.html?video_id=" + wave.Video[0].landscape;
                         link.target = "_blank";
                         link.text = wave.wave_id.split('_')[2].replaceAll('-', ':');
 

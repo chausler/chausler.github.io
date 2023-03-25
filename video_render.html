@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+
+<html>
+<body>
+    <video id="player" width="80%" height="80%" autoplay muted controls>
+    </video>
+</body>
+<script>
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const video_url = urlParams.get('video_id');
+    const player = document.getElementById('player');
+    player.src = video_url;
+
+</script>
+</html>

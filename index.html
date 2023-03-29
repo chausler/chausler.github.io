@@ -14,6 +14,10 @@
             border: 1px solid rgb(195, 28, 28);
         }
 
+        .purchased{
+            border: 4px solid rgb(54, 232, 78);
+        }
+
         img {
             width: 120px;
             height: 120px;
@@ -36,9 +40,10 @@
             background: #1abc9c;
             color: white;
             /* font-size: 30px; */
-            height: 200px;
+            height: 220px;
             margin-left: 430px;
         }
+
 
         .sidebar {
             height: 100%;
@@ -168,16 +173,27 @@
     </div>
 
     <div class="header">
-        <h1>Review Unpublished Sessions</h1>
-        <p> Select a session to review:
+        <h2>Review Sessions</h2>
+        <p> Select an unreviewed session:
             <select id="selectSession">
 
             </select>
-            <button id="loadButton" onclick="selectSession()">Load Waves</button>
+            <button id="loadButtonUnreviewed" onclick="selectSession('unreviewed')">Load Waves</button>
         </p>
-        <button id="draftButton" onclick="saveDraftClick()">Save Session Draft</button>
-        <button id="publishButton" onclick="saveAndPublishClick()">Save Session & Publish</button>
+        <p> Or review an already published session:
+            <input id="sessionDate" type="date" onchange="dateSelected()">
+            <select id="selectSessionPublished">
+
+            </select>
+            <button id="loadButtonPublished" onclick="selectSession('published')">Load Waves</button>
+        </p>
+
+        <h3 id="sessionDetails"></h3>
         <p id="results"></p>
+        <button id="draftButton" onclick="saveClick(false)">Save Session Draft</button>
+        <button id="publishButton" onclick="saveClick(true)">Save Session & Publish</button>
+
+
     </div>
 
     <div>
@@ -191,6 +207,15 @@
 
 
 <script>
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        document.getElementById("sessionDate").valueAsDate = new Date();
+        dateSelected();
+        const draftButton = document.getElementById('draftButton');
+        const publishButton = document.getElementById('publishButton');
+        draftButton.disabled = true;
+        publishButton.disabled = true;
+    });
 
 
     const login = async (e) => {
@@ -231,6 +256,7 @@
             modal.style.display = "none";
         }
     }
+
     const isAuthed = async () => {
         const auth_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/auth/me"
         const auth_token = localStorage.getItem('AuthToken');
@@ -252,6 +278,9 @@
         return return_val;
     }
 
+    isAuthed();
+
+
     function removeAllChildNodes(parent) {
         while (parent.firstChild) {
             parent.removeChild(parent.firstChild);
@@ -267,7 +296,7 @@
 
     }
 
-    const loadWaves = async (session_id) => {
+    const loadWaves = async (session_id, session_details) => {
         const authed = await isAuthed();
         const sidebar_div = document.getElementById('sidebar_div');
         sidebar_div.addEventListener("dragover", allowDrop);
@@ -283,10 +312,10 @@
                 return response.json();
             })
             .then((data) => {
-                let surfers = data;
+                let session = data;
 
                 var surfer_div;
-                let persons = surfers.Persons;
+                let persons = session.Persons;
                 // sort by name
                 persons.sort((a, b) => {
                     const lenA = a.Waves.length;
@@ -309,6 +338,9 @@
                         surfer_div = document.createElement('div');
                         surfer_div.id = surfer.person_id;
                         surfer_div.classList.add("target");
+                        if (surfer.Purchased){
+                            surfer_div.classList.add("purchased");
+                        }
                         surfer_div.addEventListener("dragover", allowDrop);
                         surfer_div.addEventListener("drop", drop);
                     }
@@ -340,7 +372,7 @@
 
                         let video = document.createElement('video');
                         video.src = wave.Thumbnail.detected_person_thumbnail.replace('.gif', '.mp4');
-                        video.type="video/mp4"
+                        video.type = "video/mp4"
                         video.autoplay = false;
                         video.loop = true;
                         video.muted = true;
@@ -373,7 +405,7 @@
                         main_div.append(surfer_div);
                     }
                 });
-                var num_surfers_loaded = surfers.Persons.length;
+                var num_surfers_loaded = session.Persons.length;
                 var target_surfer_slots = 40;
                 var new_blank_slots = target_surfer_slots - num_surfers_loaded;
                 if (num_surfers_loaded < target_surfer_slots) {
@@ -386,7 +418,21 @@
                         main_div.append(surfer_div);
                     }
                 }
-                sessionStorage.setItem("SessionID", surfers.Session.id);
+                sessionStorage.setItem("SessionID", session.Session.id);
+                const session_details_p = document.getElementById('sessionDetails');
+                const results_p = document.getElementById('results');
+                session_details_p.innerHTML = "Loaded session: " + session_details;
+                results_p.innerHTML = "";
+                const draftButton = document.getElementById('draftButton');
+                const publishButton = document.getElementById('publishButton');
+
+                if (!session.Session.published) {
+                    draftButton.disabled = false;
+                } else {
+                    draftButton.disabled = true;
+                }
+                publishButton.disabled = false;
+
             })
             .catch(function (error) {
                 console.log(error);
@@ -395,9 +441,33 @@
 
     }
 
-    function loadSessionsList() {
-        const unpublished_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Session/list_unpublished_sessions"
-        fetch(unpublished_url).then((response) => {
+    function dateSelected() {
+        const datePicker = document.getElementById("sessionDate")
+        const published_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Session/SessionFinder?date=" + datePicker.value;
+        fetch(published_url).then((response) => {
+            return response.json();
+        })
+            .then((data) => {
+                let sessions = data;
+                let selectElement = document.querySelector('#selectSessionPublished');
+                removeAllChildNodes(selectElement);
+                sessions.map(function (session) {
+                    let session_text = `${session.start_date_local},  ${session.start_hour_local}:00 =>  ${session.side}`;
+                    let session_option = document.createElement('option');
+                    session_option.value = session.id;
+                    session_option.innerText = session_text;
+                    selectElement.appendChild(session_option);
+
+                });
+
+            });
+
+    }
+
+
+    function loadUnreviewedSessionsList() {
+        const unreviewed_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Session/list_unreviewed_sessions"
+        fetch(unreviewed_url).then((response) => {
             return response.json();
         })
             .then((data) => {
@@ -415,14 +485,23 @@
 
             });
     }
-    loadSessionsList();
+    loadUnreviewedSessionsList();
 
-    function selectSession() {
-        selectElement = document.querySelector('#selectSession');
-        selected_session = selectElement.value;
-        loadWaves(selected_session);
+
+    function selectSession(session_type) {
+        let selectElement = null;
+        if (session_type == "unreviewed") {
+            selectElement = document.querySelector('#selectSession');
+        } else {
+            selectElement = document.querySelector('#selectSessionPublished');
+        }
+        let selected_session_id = selectElement.value;
+        let selected_session_details = selectElement.options[selectElement.selectedIndex].text;
+
+        loadWaves(selected_session_id, selected_session_details);
         // document.querySelector('.output').textContent = selected_session;
     }
+
 
     function buildSessionPayload(publish_session = false) {
         const surfers = document.getElementsByClassName("target");
@@ -444,90 +523,81 @@
 
         });
 
-        // Only keep the sidebar surfers if we're not publishing
-        if (publish_session == false) {
-            let sidebar_div = document.getElementById("sidebar_div");
-            let waves = [];
-            let waves_array = [...sidebar_div.childNodes];
-            waves_array.map(function (wave) {
-                if (wave.nodeName == "SPAN") {
-                    waves.push(wave.id);
-                }
-            });
 
-            if (waves.length > 0) {
-                let surfer_waves = {};
-                surfer_waves["surfer_session_id"] = '999__' + Math.random().toString(36).substring(2, 16);
-                surfer_waves["waves"] = waves;
-                surf_sessions.push(surfer_waves);
+        let sidebar_div = document.getElementById("sidebar_div");
+        let waves = [];
+        let waves_array = [...sidebar_div.childNodes];
+        waves_array.map(function (wave) {
+            if (wave.nodeName == "SPAN") {
+                waves.push(wave.id);
             }
+        });
 
-        }
+        let session_id = sessionStorage.getItem('SessionID');
+        let surfer_waves = {};
+        surfer_waves["surfer_session_id"] = '999__' + session_id;
+        surfer_waves["waves"] = waves;
+        surf_sessions.push(surfer_waves);
+
+
+
         console.log(surf_sessions);
 
         const payload = {};
-        payload['session_id'] = sessionStorage.getItem('SessionID');
+        payload['session_id'] = session_id;
         payload['surfer_sessions'] = surf_sessions;
         payload['clustered'] = true;
         payload['published'] = publish_session;
+        payload['reviewed'] = publish_session;
         return payload
 
     }
 
-    const saveDraftClick = async (publish_session = false) => {
+    const saveClick = async (publish_session = false) => {
         const draftButton = document.getElementById('draftButton');
         const publishButton = document.getElementById('publishButton');
-        const loadButton = document.getElementById('loadButton');
+        const loadButtonUnreviewed = document.getElementById('loadButtonUnreviewed');
+        const loadButtonPublished = document.getElementById('loadButtonPublished');
         draftButton.disabled = true;
         publishButton.disabled = true;
-        loadButton.disabled = true;
+        loadButtonUnreviewed.disabled = true;
+        loadButtonPublished.disabled = true;
 
         const payload = buildSessionPayload(publish_session);
         const auth_token = localStorage.getItem('AuthToken');
         const update_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu/Session/UpdateSession";
         const get_session_url = "https://x8je-gkdv-xesr.a2.xano.io/api:kYaePrLu:v1/Session/GetSessionByID?id=" + sessionStorage.getItem('SessionID');
 
-        const session = await fetch(get_session_url).then(response => response.json());
         const result_item = document.getElementById("results");
+        const details_item = document.getElementById("sessionDetails");
 
-        if (session.published == false) {
-            const requestOptions = {
-                method: 'POST',
-                // credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': auth_token
-                },
-                body: JSON.stringify(payload)
-            };
-            await fetch(update_session_url, requestOptions)
-                .then(response => response.json())
-                .then((data) => {
-                    result_item.innerHTML = "Updated!" + JSON.stringify(data);
-                    sessionStorage.setItem('SessionID', data.id)
-                });
-        } else {
-            result_item.innerHTML = "Can't publish. Session already published";
-        }
+
+        const requestOptions = {
+            method: 'POST',
+            // credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': auth_token
+            },
+            body: JSON.stringify(payload)
+        };
+        await fetch(update_session_url, requestOptions)
+            .then(response => response.json())
+            .then((data) => {
+                result_item.innerHTML = "Updated!" + JSON.stringify(data);
+                details_item.innerHTML = "";
+                sessionStorage.setItem('SessionID', data.id)
+            });
 
         if (publish_session == true) {
             clearWaves();
-            loadSessionsList();
+            loadUnreviewedSessionsList();
+            dateSelected();
         }
-        draftButton.disabled = false;
-        publishButton.disabled = false;
-        loadButton.disabled = false;
-
-    }
-
-
-    function saveAndPublishClick() {
-        let text;
-        if (confirm("Plaese be sure you are happy with the wave assignments.\nThis can't be undone! ") == true) {
-            saveDraftClick(true)
-        } else {
-            text = "You canceled!";
-        }
+        draftButton.disabled = true;
+        publishButton.disabled = true;
+        loadButtonUnreviewed.disabled = false;
+        loadButtonPublished.disabled = false;
 
     }
 

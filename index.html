@@ -180,7 +180,7 @@
             </select>
             <button id="loadButtonUnreviewed" onclick="selectSession('unreviewed')">Load Waves</button>
         </p>
-        <p> Or review an already published session:
+        <p> Or an already published and reviewed session:
             <input id="sessionDate" type="date" onchange="dateSelected()">
             <select id="selectSessionPublished">
 
@@ -476,6 +476,10 @@
                 removeAllChildNodes(selectElement);
                 sessions.map(function (session) {
                     let session_text = `${session.start_date_local},  ${session.start_hour_local}:00 =>  ${session.side}`;
+                    if (session.published) {
+                        session_text = "PUBLISHED: " + session_text;
+
+                    }
                     let session_option = document.createElement('option');
                     session_option.value = session.id;
                     session_option.innerText = session_text;
